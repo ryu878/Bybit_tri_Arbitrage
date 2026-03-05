@@ -39,3 +39,7 @@ PRINT_EVERY_SEC: float = _get_float("PRINT_EVERY_SEC", 1)
 TOP_N: int = _get_int("TOP_N", 15)
 EDGE_THRESHOLD_BPS: float = _get_float("EDGE_THRESHOLD_BPS", 2)
 MAX_STALE_MS: int = _get_int("MAX_STALE_MS", 1500)
+
+# Telegram (optional): leave empty to disable
+TELEGRAM_BOT_TOKEN: str = _get("TELEGRAM_BOT_TOKEN", "")
+TELEGRAM_CHAT_ID: str = _get("TELEGRAM_CHAT_ID", "")

@@ -16,6 +16,7 @@ from services.dashboard.ws_client import OrderbookCache, run_ws_client
 from services.dashboard.triangles import build_triangles
 from services.dashboard.calc import calc_triangle
 from services.dashboard.printer import clear_and_print
+from services.dashboard import telegram_notify
 
 
 def _min_net_edge_bps() -> float:
@@ -51,7 +52,10 @@ async def run_dashboard() -> None:
     async def ws_task() -> None:
         await run_ws_client(cache, stop)
 
+    sent_for: set[str] = set()  # triangle_ids we've already sent Telegram for; clear when arb disappears
+
     async def scan_and_print() -> None:
+        nonlocal sent_for
         while not stop.is_set():
             orderbooks = cache_to_orderbooks(cache)
             snapshots: list[tuple[str, float, int, ArbitrageSnapshot]] = []
@@ -62,6 +66,14 @@ async def run_dashboard() -> None:
                     snapshots.append((snap.triangle_id, snap.edge_bps, snap.timestamp, snap))
             snapshots.sort(key=lambda x: -x[1])
             sorted_snaps = [x[3] for x in snapshots]
+
+            current_ids = {s.triangle_id for s in sorted_snaps}
+            new_ids = current_ids - sent_for
+            for snap in sorted_snaps:
+                if snap.triangle_id in new_ids:
+                    await telegram_notify.send_arb_notification(snap)
+                    sent_for.add(snap.triangle_id)
+            sent_for -= sent_for - current_ids  # clear state for triangles that no longer have arb
 
             for s in sorted_snaps:
                 await redis_store.write_arb_snapshot(redis_client, s)

@@ -54,6 +54,18 @@ poetry run dashboard
 
 Or split panes: one for Redis (e.g. `docker compose up redis`), one for `poetry run dashboard`.
 
+## Telegram (optional)
+
+When an arbitrage opportunity appears (net edge above threshold), the dashboard can send one message per opportunity to a Telegram chat. When the opportunity disappears, that triangle is cleared; if it appears again later, a new message is sent.
+
+1. Create a bot with [@BotFather](https://t.me/BotFather) and get `TELEGRAM_BOT_TOKEN`.
+2. Get your chat ID (e.g. send a message to the bot and open `https://api.telegram.org/bot<TOKEN>/getUpdates`).
+3. In `.env` set:
+   - `TELEGRAM_BOT_TOKEN=...`
+   - `TELEGRAM_CHAT_ID=...`
+
+Leave either variable empty to disable Telegram.
+
 ## Console output
 
-The dashboard prints a table (cleared each refresh) with columns: **triangle**, **edge_bps**, **leg1**, **leg2**, **leg3**, **end_amount**, **timestamp**, sorted by **edge_bps** descending, top **TOP_N** rows.
+The dashboard prints a table (cleared each refresh) with columns: **triangle**, **raw_edge**, **net_edge** (in bps), sorted by net edge descending, top **TOP_N** rows.
