@@ -69,3 +69,32 @@ Leave either variable empty to disable Telegram.
 ## Console output
 
 The dashboard prints a table (cleared each refresh) with columns: **triangle**, **raw_edge**, **net_edge** (in bps), sorted by net edge descending, top **TOP_N** rows.
+
+***
+## About
+## 📌 Quantitative Researcher | Algorithmic Trader | Trading Systems Architect
+
+Quantitative researcher and trading systems engineer with end-to-end ownership of systematic strategies — from research and statistical validation to execution architecture and 24/7 production deployment.
+
+Experience across crypto (CEX/DEX), FX, and exchange-traded markets.
+
+Core focus areas:
+- Systematic strategy design, validation, and robustness testing
+- Market microstructure analysis (order book dynamics, liquidity, spread behavior, funding, volume delta)
+- Tick-level and historical backtesting framework development
+- Execution engine architecture and order lifecycle management
+- Real-time market data processing pipelines
+- Risk-aware system design and capital efficiency
+- Production-grade trading infrastructure
+
+## Technical Stack
+
+- **Languages:** Python, C++, MQL5
+- **Execution & Connectivity:** REST, WebSocket, FIX
+- **Infrastructure:** Linux, Docker, Redis, PostgreSQL, ClickHouse
+- **Analytics:** NumPy, Pandas, custom backtesting frameworks
+
+## Contact
+
+**Email:** ryu8777@gmail.com
+***
