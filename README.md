@@ -1,4 +1,4 @@
-# bybit_tri_arb
+# Bybit Triangular Arbitrage
 
 Console-based triangular arbitrage monitoring platform for Bybit Spot (monitoring only, no trading).
 
