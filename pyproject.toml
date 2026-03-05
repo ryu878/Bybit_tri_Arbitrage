@@ -1,0 +1,30 @@
+[tool.poetry]
+name = "bybit_tri_arb"
+version = "0.1.0"
+description = "Triangular arbitrage monitoring platform for Bybit Spot"
+authors = []
+readme = "README.md"
+packages = [{ include = "core" }, { include = "services" }, { include = "scripts" }]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+websockets = "*"
+redis = "*"
+pandas = "*"
+tabulate = "*"
+orjson = "*"
+python-dotenv = "*"
+
+[tool.poetry.group.dev.dependencies]
+ruff = "*"
+
+[tool.poetry.scripts]
+dashboard = "scripts.run_dashboard:main"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
