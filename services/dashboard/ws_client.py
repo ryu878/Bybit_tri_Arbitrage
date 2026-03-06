@@ -7,6 +7,7 @@ subscribed via orderbook_stream per symbol (spot, depth=1).
 import asyncio
 import threading
 import time
+from typing import Optional
 from pybit.unified_trading import WebSocket
 
 from core.config import BYBIT_TESTNET
@@ -24,8 +25,8 @@ _first_seen: set[str] = set()
 
 def _make_callback(
     cache: OrderbookCache,
-    dirty_symbols: set[str] | None = None,
-    dirty_lock: threading.Lock | None = None,
+    dirty_symbols: Optional[set[str]] = None,
+    dirty_lock: Optional[threading.Lock] = None,
 ) -> object:
     """Build message handler that updates cache, optionally marks symbol dirty for incremental recalc."""
 
@@ -81,8 +82,8 @@ def _run_pybit_blocking(
     cache: OrderbookCache,
     stop_event: asyncio.Event,
     symbols: list[str],
-    dirty_symbols: set[str] | None = None,
-    dirty_lock: threading.Lock | None = None,
+    dirty_symbols: Optional[set[str]] = None,
+    dirty_lock: Optional[threading.Lock] = None,
 ) -> None:
     """Run pybit WebSocket in a thread: connect, subscribe, wait until stop."""
     global _updates_total, _last_debug_ts, _first_seen
@@ -127,8 +128,8 @@ async def run_ws_client(
     stop_event: asyncio.Event,
     *,
     symbols: list[str],
-    dirty_symbols: set[str] | None = None,
-    dirty_lock: threading.Lock | None = None,
+    dirty_symbols: Optional[set[str]] = None,
+    dirty_lock: Optional[threading.Lock] = None,
 ) -> None:
     """
     Run pybit spot WebSocket in a thread: subscribe to orderbook.1 for each symbol,
