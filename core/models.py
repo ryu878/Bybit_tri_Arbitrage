@@ -3,6 +3,19 @@
 from dataclasses import dataclass
 
 
+@dataclass(slots=True)
+class ScannerPath:
+    """Compact triangle path for scanner: label + 3 legs (symbol, side)."""
+
+    label: str
+    s1: str
+    side1: str  # BUY | SELL
+    s2: str
+    side2: str
+    s3: str
+    side3: str
+
+
 @dataclass
 class OrderBookTop:
     """Best bid/ask for a single symbol."""

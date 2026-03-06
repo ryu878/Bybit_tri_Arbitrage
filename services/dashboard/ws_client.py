@@ -22,8 +22,12 @@ _last_debug_ts = 0.0
 _first_seen: set[str] = set()
 
 
-def _make_callback(cache: OrderbookCache) -> object:
-    """Build message handler that updates cache and logs debug info."""
+def _make_callback(
+    cache: OrderbookCache,
+    dirty_symbols: set[str] | None = None,
+    dirty_lock: threading.Lock | None = None,
+) -> object:
+    """Build message handler that updates cache, optionally marks symbol dirty for incremental recalc."""
 
     def handle_message(message: object) -> None:
         global _updates_total, _last_debug_ts
@@ -49,6 +53,9 @@ def _make_callback(cache: OrderbookCache) -> object:
         # Use local receipt time for freshness (avoids Bybit ts unit/clock skew; fresh = "we got an update recently")
         ts_ms = int(time.time() * 1000)
         cache[s] = (bid, bid_qty, ask, ask_qty, ts_ms)
+        if dirty_symbols is not None and dirty_lock is not None:
+            with dirty_lock:
+                dirty_symbols.add(s)
         with _stats_lock:
             _updates_total += 1
             first = s not in _first_seen
@@ -74,6 +81,8 @@ def _run_pybit_blocking(
     cache: OrderbookCache,
     stop_event: asyncio.Event,
     symbols: list[str],
+    dirty_symbols: set[str] | None = None,
+    dirty_lock: threading.Lock | None = None,
 ) -> None:
     """Run pybit WebSocket in a thread: connect, subscribe, wait until stop."""
     global _updates_total, _last_debug_ts, _first_seen
@@ -91,7 +100,7 @@ def _run_pybit_blocking(
         debug_log("WS", "No symbols to subscribe to; skipping WebSocket.")
         return
     debug_log("WS", f"Subscribing to orderbook.1 for {len(symbols)} symbols: {symbols}")
-    callback = _make_callback(cache)
+    callback = _make_callback(cache, dirty_symbols, dirty_lock)
     try:
         for symbol in symbols:
             ws.orderbook_stream(symbol=symbol, depth=1, callback=callback)
@@ -118,11 +127,12 @@ async def run_ws_client(
     stop_event: asyncio.Event,
     *,
     symbols: list[str],
+    dirty_symbols: set[str] | None = None,
+    dirty_lock: threading.Lock | None = None,
 ) -> None:
     """
     Run pybit spot WebSocket in a thread: subscribe to orderbook.1 for each symbol,
-    update cache from callbacks. Runs until stop_event is set.
-    symbols: only these symbols are subscribed (e.g. valid symbols that appear in triangles).
+    update cache from callbacks. If dirty_symbols/dirty_lock are set, each update marks that symbol dirty.
     """
     debug_log("WS", f"WS task started (pybit spot, {len(symbols)} symbols: {symbols})")
     loop = asyncio.get_event_loop()
@@ -132,4 +142,6 @@ async def run_ws_client(
         cache,
         stop_event,
         symbols,
+        dirty_symbols,
+        dirty_lock,
     )
