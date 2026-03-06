@@ -11,9 +11,10 @@ from core.config import (
     TAKER_FEE_BPS,
     TOP_N,
 )
-from core.debug_log import debug_log
+from core.debug_log import debug_log, init_log
 from core.models import ArbitrageSnapshot, OrderBookTop
 from core import redis_store
+from core.bybit_symbols import filter_valid_symbols
 from services.dashboard.ws_client import OrderbookCache, run_ws_client
 from services.dashboard.triangles import build_triangles
 from services.dashboard.calc import calc_triangle
@@ -47,15 +48,27 @@ def cache_to_orderbooks(cache: OrderbookCache) -> dict[str, OrderBookTop]:
 async def run_dashboard() -> None:
     stop = asyncio.Event()
     cache: OrderbookCache = {}
-    triangles = build_triangles(SYMBOLS)
+
+    # Check which configured symbols are actually tradeable on Bybit spot
+    valid_symbols, invalid_symbols = filter_valid_symbols(SYMBOLS)
+    if invalid_symbols:
+        init_log("SYMBOLS", f"Excluded (not on Bybit spot): {sorted(invalid_symbols)}")
+    if not valid_symbols:
+        init_log("SYMBOLS", "No valid symbols after filtering. Check SYMBOLS and Bybit API.")
+        return
+
+    triangles = build_triangles(valid_symbols)
+    # Only subscribe to symbols that appear in at least one triangle
+    symbols_to_subscribe = sorted(set(s for t in triangles for (s, _) in t.legs))
+    init_log("SYMBOLS", f"Valid: {len(valid_symbols)}, triangles: {len(triangles)}, subscribing to: {symbols_to_subscribe}")
 
     redis_client = await redis_store.get_redis()
     if DEBUG_MODE:
         debug_log("INIT", "Dashboard started, DEBUG_MODE=true")
-        debug_log("INIT", f"Triangles: {len(triangles)}, symbols: {SYMBOLS}, Redis connected")
+        debug_log("INIT", f"Redis connected")
 
     async def ws_task() -> None:
-        await run_ws_client(cache, stop)
+        await run_ws_client(cache, stop, symbols=symbols_to_subscribe)
 
     sent_for: set[str] = set()  # triangle_ids we've already sent Telegram for; clear when arb disappears
 

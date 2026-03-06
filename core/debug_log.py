@@ -1,4 +1,4 @@
-"""Debug console output when DEBUG_MODE is true."""
+"""Debug console output when DEBUG_MODE is true; init_log always prints for startup info."""
 
 import sys
 from core.config import DEBUG_MODE
@@ -9,3 +9,8 @@ def debug_log(tag: str, message: str) -> None:
     if not DEBUG_MODE:
         return
     print(f"[DEBUG][{tag}] {message}", file=sys.stderr, flush=True)
+
+
+def init_log(tag: str, message: str) -> None:
+    """Always print to stderr (e.g. symbol availability on first run)."""
+    print(f"[INIT][{tag}] {message}", file=sys.stderr, flush=True)

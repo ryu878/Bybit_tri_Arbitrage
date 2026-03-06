@@ -9,7 +9,7 @@ import threading
 import time
 from pybit.unified_trading import WebSocket
 
-from core.config import BYBIT_TESTNET, SYMBOLS
+from core.config import BYBIT_TESTNET
 from core.debug_log import debug_log
 
 # In-memory orderbook cache: symbol -> (bid, bid_qty, ask, ask_qty, timestamp)
@@ -69,7 +69,11 @@ def _make_callback(cache: OrderbookCache) -> object:
     return handle_message
 
 
-def _run_pybit_blocking(cache: OrderbookCache, stop_event: asyncio.Event) -> None:
+def _run_pybit_blocking(
+    cache: OrderbookCache,
+    stop_event: asyncio.Event,
+    symbols: list[str],
+) -> None:
     """Run pybit WebSocket in a thread: connect, subscribe, wait until stop."""
     global _updates_total, _last_debug_ts, _first_seen
     with _stats_lock:
@@ -82,10 +86,13 @@ def _run_pybit_blocking(cache: OrderbookCache, stop_event: asyncio.Event) -> Non
     except Exception as e:
         debug_log("WS", f"Failed to create WebSocket client: {e}")
         return
-    debug_log("WS", f"Subscribing to orderbook.1 for {len(SYMBOLS)} symbols: {SYMBOLS}")
+    if not symbols:
+        debug_log("WS", "No symbols to subscribe to; skipping WebSocket.")
+        return
+    debug_log("WS", f"Subscribing to orderbook.1 for {len(symbols)} symbols: {symbols}")
     callback = _make_callback(cache)
     try:
-        for symbol in SYMBOLS:
+        for symbol in symbols:
             ws.orderbook_stream(symbol=symbol, depth=1, callback=callback)
         debug_log("WS", "Subscribe calls sent. Waiting for data...")
     except Exception as e:
@@ -108,16 +115,20 @@ def _run_pybit_blocking(cache: OrderbookCache, stop_event: asyncio.Event) -> Non
 async def run_ws_client(
     cache: OrderbookCache,
     stop_event: asyncio.Event,
+    *,
+    symbols: list[str],
 ) -> None:
     """
     Run pybit spot WebSocket in a thread: subscribe to orderbook.1 for each symbol,
     update cache from callbacks. Runs until stop_event is set.
+    symbols: only these symbols are subscribed (e.g. valid symbols that appear in triangles).
     """
-    debug_log("WS", f"WS task started (pybit spot, {len(SYMBOLS)} symbols: {SYMBOLS})")
+    debug_log("WS", f"WS task started (pybit spot, {len(symbols)} symbols: {symbols})")
     loop = asyncio.get_event_loop()
     await loop.run_in_executor(
         None,
         _run_pybit_blocking,
         cache,
         stop_event,
+        symbols,
     )
