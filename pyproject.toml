@@ -8,13 +8,13 @@ packages = [{ include = "core" }, { include = "services" }, { include = "scripts
 
 [tool.poetry.dependencies]
 python = "^3.11"
-websockets = "*"
 redis = "*"
 pandas = "*"
 tabulate = "*"
 orjson = "*"
 python-dotenv = "*"
 httpx = "*"
+pybit = "*"
 
 [tool.poetry.group.dev.dependencies]
 ruff = "*"

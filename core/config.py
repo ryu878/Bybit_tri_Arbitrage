@@ -34,9 +34,8 @@ def _get_bool(key: str, default: bool = False) -> bool:
 
 
 REDIS_URL: str = _get("REDIS_URL", "redis://redis:6379/0")
-BYBIT_WS_PUBLIC_SPOT: str = _get(
-    "BYBIT_WS_PUBLIC_SPOT", "wss://stream.bybit.com/v5/public/spot"
-)
+# Bybit WebSocket: pybit uses this to choose mainnet vs testnet
+BYBIT_TESTNET: bool = _get_bool("BYBIT_TESTNET", False)
 
 SYMBOLS_STR: str = _get("SYMBOLS", "BTCUSDT,ETHUSDT,ETHBTC,SOLUSDT,SOLBTC,SOLETH")
 SYMBOLS: list[str] = [s.strip() for s in SYMBOLS_STR.split(",") if s.strip()]
