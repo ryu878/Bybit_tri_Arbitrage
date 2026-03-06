@@ -82,6 +82,9 @@ async def run_dashboard() -> None:
                     if snap.edge_bps > min_net:
                         snapshots.append((snap.triangle_id, snap.edge_bps, snap.timestamp, snap))
             debug_log("SCAN", f"Triangles: {len(triangles)} total, {calculated} with data, {len(snapshots)} above threshold (net > {min_net:.1f} bps)")
+            if all_calc_snaps:
+                for s in sorted(all_calc_snaps, key=lambda x: -x.edge_bps):
+                    debug_log("SCAN", f"  {s.path_str}  net={s.edge_bps:.1f} bps")
 
             max_edge_bps = max((s.edge_bps for s in all_calc_snaps), default=None)
             snapshots.sort(key=lambda x: -x[1])
