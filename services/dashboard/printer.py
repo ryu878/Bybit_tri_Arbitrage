@@ -6,17 +6,13 @@ from tabulate import tabulate
 from core.models import ArbitrageSnapshot
 
 
-def _bps_str(bps: float) -> str:
-    return f"{round(bps, 1):.1f} bps"
-
-
 def clear_and_print(
     snapshots: list[ArbitrageSnapshot],
     top_n: int,
     *,
     max_edge_bps: float | None = None,
 ) -> None:
-    """Clear screen and print table: triangle, raw_edge, net_edge (in bps)."""
+    """Clear screen and print table: triangle, leg1, leg2, leg3, net."""
     os.system("cls" if os.name == "nt" else "clear")
 
     if not snapshots:
@@ -31,8 +27,10 @@ def clear_and_print(
         [
             {
                 "triangle": s.path_str,
-                "raw_edge": _bps_str(s.raw_edge_bps),
-                "net_edge": _bps_str(s.edge_bps),
+                "leg1": s.leg1,
+                "leg2": s.leg2,
+                "leg3": s.leg3,
+                "net": round(s.edge_bps, 1),
             }
             for s in rows
         ]

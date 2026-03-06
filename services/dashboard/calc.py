@@ -66,21 +66,21 @@ def calc_triangle(
             amount_net = amount_net / price
             amount_net = _apply_fee(amount_net, fee_bps)
             amount_net = _apply_slippage(amount_net, slip_bps)
-            leg_descs.append(f"{symbol}(ask={price:.4f})")
+            leg_descs.append(f"BUY {symbol}")
         else:
             price = top.bid
             amount_raw = amount_raw * price
             amount_net = amount_net * price
             amount_net = _apply_fee(amount_net, fee_bps)
             amount_net = _apply_slippage(amount_net, slip_bps)
-            leg_descs.append(f"{symbol}(bid={price:.4f})")
+            leg_descs.append(f"SELL {symbol}")
 
     raw_edge_bps = (amount_raw / start_amount - 1) * 10_000
     net_edge_bps = (amount_net / start_amount - 1) * 10_000
 
     return ArbitrageSnapshot(
         triangle_id=triangle.id,
-        path_str=triangle.path_str or _path_str(triangle),
+        path_str=_path_str(triangle),
         raw_edge_bps=raw_edge_bps,
         edge_bps=net_edge_bps,
         leg1=leg_descs[0] if len(leg_descs) > 0 else "",
