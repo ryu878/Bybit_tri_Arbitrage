@@ -21,6 +21,7 @@ class Triangle:
 
     id: str
     legs: list[tuple[str, str]]  # (symbol, "buy" | "sell")
+    path_str: str = ""  # e.g. "USDT -> BTC -> ETH -> USDT"; set when built from spot graph
 
 
 @dataclass

@@ -28,7 +28,7 @@ bybit_tri_arb/
 
 ```bash
 cp .env.example .env
-# Edit .env if needed (REDIS_URL, SYMBOLS, etc.)
+# Edit .env if needed (REDIS_URL, TRIANGLE_START_COINS, etc.)
 poetry install
 ```
 

@@ -80,7 +80,7 @@ def calc_triangle(
 
     return ArbitrageSnapshot(
         triangle_id=triangle.id,
-        path_str=_path_str(triangle),
+        path_str=triangle.path_str or _path_str(triangle),
         raw_edge_bps=raw_edge_bps,
         edge_bps=net_edge_bps,
         leg1=leg_descs[0] if len(leg_descs) > 0 else "",

@@ -37,8 +37,11 @@ REDIS_URL: str = _get("REDIS_URL", "redis://redis:6379/0")
 # Bybit WebSocket: pybit uses this to choose mainnet vs testnet
 BYBIT_TESTNET: bool = _get_bool("BYBIT_TESTNET", False)
 
-SYMBOLS_STR: str = _get("SYMBOLS", "BTCUSDT,ETHUSDT,ETHBTC,SOLUSDT,SOLBTC,SOLETH")
-SYMBOLS: list[str] = [s.strip() for s in SYMBOLS_STR.split(",") if s.strip()]
+# Triangle start coins (paths start from these). Comma-separated, e.g. USDT,BTC,ETH,USDC
+TRIANGLE_START_COINS_STR: str = _get("TRIANGLE_START_COINS", "USDT,BTC,ETH,USDC")
+TRIANGLE_START_COINS: set[str] = {
+    s.strip().upper() for s in TRIANGLE_START_COINS_STR.split(",") if s.strip()
+}
 
 TAKER_FEE_BPS: float = _get_float("TAKER_FEE_BPS", 5.5)
 SLIPPAGE_BPS_BUFFER: float = _get_float("SLIPPAGE_BPS_BUFFER", 10)

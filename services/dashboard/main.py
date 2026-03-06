@@ -7,16 +7,15 @@ from core.config import (
     MAX_STALE_MS,
     PRINT_EVERY_SEC,
     SLIPPAGE_BPS_BUFFER,
-    SYMBOLS,
     TAKER_FEE_BPS,
     TOP_N,
+    TRIANGLE_START_COINS,
 )
 from core.debug_log import debug_log, init_log
 from core.models import ArbitrageSnapshot, OrderBookTop
 from core import redis_store
-from core.bybit_symbols import filter_valid_symbols
+from core.bybit_spot import triangles_from_spot
 from services.dashboard.ws_client import OrderbookCache, run_ws_client
-from services.dashboard.triangles import build_triangles
 from services.dashboard.calc import calc_triangle
 from services.dashboard.printer import clear_and_print
 from services.dashboard import telegram_notify
@@ -49,18 +48,11 @@ async def run_dashboard() -> None:
     stop = asyncio.Event()
     cache: OrderbookCache = {}
 
-    # Check which configured symbols are actually tradeable on Bybit spot
-    valid_symbols, invalid_symbols = filter_valid_symbols(SYMBOLS)
-    if invalid_symbols:
-        init_log("SYMBOLS", f"Excluded (not on Bybit spot): {sorted(invalid_symbols)}")
-    if not valid_symbols:
-        init_log("SYMBOLS", "No valid symbols after filtering. Check SYMBOLS and Bybit API.")
+    # Fetch Bybit spot instruments and build triangles from conversion graph
+    triangles, symbols_to_subscribe = triangles_from_spot(TRIANGLE_START_COINS)
+    if not triangles:
+        init_log("SPOT", "No triangles found. Check Bybit API and TRIANGLE_START_COINS.")
         return
-
-    triangles = build_triangles(valid_symbols)
-    # Only subscribe to symbols that appear in at least one triangle
-    symbols_to_subscribe = sorted(set(s for t in triangles for (s, _) in t.legs))
-    init_log("SYMBOLS", f"Valid: {len(valid_symbols)}, triangles: {len(triangles)}, subscribing to: {symbols_to_subscribe}")
 
     redis_client = await redis_store.get_redis()
     if DEBUG_MODE:
