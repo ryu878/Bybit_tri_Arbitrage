@@ -105,7 +105,9 @@ async def run_dashboard() -> None:
             await redis_store.write_arb_top(redis_client, sorted_snaps[:TOP_N])
             debug_log("REDIS", f"Wrote {len(sorted_snaps)} snapshots, top {min(TOP_N, len(sorted_snaps))} to arb:top")
 
-            clear_and_print(sorted_snaps, TOP_N, max_edge_bps=max_edge_bps)
+            # Always show table (triangle, leg1, leg2, leg3, net) for all calculated triangles, top N by net
+            display_snaps = sorted(all_calc_snaps, key=lambda x: -x.edge_bps)[:TOP_N]
+            clear_and_print(display_snaps, TOP_N, max_edge_bps=max_edge_bps)
             await asyncio.sleep(PRINT_EVERY_SEC)
 
     ws = asyncio.create_task(ws_task())
