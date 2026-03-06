@@ -6,6 +6,7 @@ import time
 from core.config import (
     DEBUG_MODE,
     PRINT_EVERY_SEC,
+    SLIPPAGE_BPS_BUFFER,
     TAKER_FEE_BPS,
     TOP_N,
     TRIANGLE_START_COINS,
