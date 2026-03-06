@@ -57,3 +57,8 @@ TELEGRAM_CHAT_ID: str = _get("TELEGRAM_CHAT_ID", "")
 
 # Debug: print data collection, calculations, etc. to console
 DEBUG_MODE: bool = _get_bool("DEBUG_MODE", False)
+
+# Save average net edge to Redis every minute (for charts / moving averages)
+SAVE_TO_DB: bool = _get_bool("SAVE_TO_DB", False)
+# Keep last N minutes (1440 = 24h); used for Redis trim and optional key TTL
+AVG_NET_RETENTION_MINUTES: int = _get_int("AVG_NET_RETENTION_MINUTES", 1440)

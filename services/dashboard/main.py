@@ -6,6 +6,7 @@ import time
 from core.config import (
     DEBUG_MODE,
     PRINT_EVERY_SEC,
+    SAVE_TO_DB,
     SLIPPAGE_BPS_BUFFER,
     TAKER_FEE_BPS,
     TOP_N,
@@ -67,9 +68,10 @@ async def run_dashboard() -> None:
     sent_for: set[str] = set()
     snapshots: list[ArbitrageSnapshot | None] = [None] * n_paths
     first_scan = True
+    last_saved_minute: int = -1
 
     async def scan_and_print() -> None:
-        nonlocal sent_for, first_scan
+        nonlocal sent_for, first_scan, last_saved_minute
         while not stop.is_set():
             with dirty_lock:
                 dirty = set(dirty_symbols)
@@ -116,6 +118,15 @@ async def run_dashboard() -> None:
             await redis_store.write_arb_top(redis_client, sorted_snaps[:TOP_N])
             if DEBUG_MODE:
                 debug_log("REDIS", f"Wrote {len(sorted_snaps)} snapshots, top {min(TOP_N, len(sorted_snaps))} to arb:top")
+
+            if SAVE_TO_DB and all_calc_snaps:
+                current_minute = int(time.time() // 60)
+                if current_minute > last_saved_minute:
+                    avg_net = sum(s.edge_bps for s in all_calc_snaps) / len(all_calc_snaps)
+                    await redis_store.save_avg_net_minutely(redis_client, current_minute, avg_net)
+                    last_saved_minute = current_minute
+                    if DEBUG_MODE:
+                        debug_log("DB", f"Saved avg_net={avg_net:.2f} bps @ minute {current_minute}")
 
             display_snaps = sorted(all_calc_snaps, key=lambda x: -x.edge_bps)[:TOP_N]
             clear_and_print(
