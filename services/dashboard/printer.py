@@ -10,12 +10,20 @@ def _bps_str(bps: float) -> str:
     return f"{round(bps, 1):.1f} bps"
 
 
-def clear_and_print(snapshots: list[ArbitrageSnapshot], top_n: int) -> None:
+def clear_and_print(
+    snapshots: list[ArbitrageSnapshot],
+    top_n: int,
+    *,
+    max_edge_bps: float | None = None,
+) -> None:
     """Clear screen and print table: triangle, raw_edge, net_edge (in bps)."""
     os.system("cls" if os.name == "nt" else "clear")
 
     if not snapshots:
-        print("No arbitrage data yet.")
+        msg = "No arbitrage data yet."
+        if max_edge_bps is not None:
+            msg += f"  Max edge: {max_edge_bps:.1f} bps"
+        print(msg)
         return
 
     rows = snapshots[:top_n]

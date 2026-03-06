@@ -71,16 +71,19 @@ async def run_dashboard() -> None:
             debug_log("SCAN", f"Orderbooks: {len(orderbooks)} symbols (fresh, within MAX_STALE_MS)")
 
             snapshots: list[tuple[str, float, int, ArbitrageSnapshot]] = []
+            all_calc_snaps: list[ArbitrageSnapshot] = []
             min_net = _min_net_edge_bps()
             calculated = 0
             for t in triangles:
                 snap = calc_triangle(t, orderbooks)
                 if snap:
                     calculated += 1
+                    all_calc_snaps.append(snap)
                     if snap.edge_bps > min_net:
                         snapshots.append((snap.triangle_id, snap.edge_bps, snap.timestamp, snap))
             debug_log("SCAN", f"Triangles: {len(triangles)} total, {calculated} with data, {len(snapshots)} above threshold (net > {min_net:.1f} bps)")
 
+            max_edge_bps = max((s.edge_bps for s in all_calc_snaps), default=None)
             snapshots.sort(key=lambda x: -x[1])
             sorted_snaps = [x[3] for x in snapshots]
 
@@ -99,7 +102,7 @@ async def run_dashboard() -> None:
             await redis_store.write_arb_top(redis_client, sorted_snaps[:TOP_N])
             debug_log("REDIS", f"Wrote {len(sorted_snaps)} snapshots, top {min(TOP_N, len(sorted_snaps))} to arb:top")
 
-            clear_and_print(sorted_snaps, TOP_N)
+            clear_and_print(sorted_snaps, TOP_N, max_edge_bps=max_edge_bps)
             await asyncio.sleep(PRINT_EVERY_SEC)
 
     ws = asyncio.create_task(ws_task())
