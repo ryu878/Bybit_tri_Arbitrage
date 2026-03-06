@@ -6,7 +6,6 @@ import time
 from core.config import (
     DEBUG_MODE,
     PRINT_EVERY_SEC,
-    SLIPPAGE_BPS_BUFFER,
     TAKER_FEE_BPS,
     TOP_N,
     TRIANGLE_START_COINS,
@@ -22,15 +21,14 @@ from services.dashboard.printer import clear_and_print
 from services.dashboard import telegram_notify
 
 
-def _min_net_after_slippage_threshold() -> float:
-    """Opportunity when (edge_bps - SLIPPAGE_BPS_BUFFER) > this threshold."""
+def _min_net_edge_threshold() -> float:
+    """Report opportunity only when net edge (after fee + slippage) is above this."""
     return (3 * TAKER_FEE_BPS) + SLIPPAGE_BPS_BUFFER
 
 
 def _is_above_threshold(snap: ArbitrageSnapshot) -> bool:
-    """Compare net_after_slippage_bps to threshold."""
-    net_after_slippage = snap.edge_bps - SLIPPAGE_BPS_BUFFER
-    return net_after_slippage > _min_net_after_slippage_threshold()
+    """Net (edge_bps) already includes fee and slippage; compare directly to threshold."""
+    return snap.edge_bps > _min_net_edge_threshold()
 
 
 async def run_dashboard() -> None:

@@ -1,16 +1,18 @@
 """
 Direct multiplier-based edge calculation. No step-by-step simulation.
-BUY -> ask_px, SELL -> bid_px. fee_factor = (1 - taker_fee_decimal)^3.
+BUY -> ask_px, SELL -> bid_px.
+net = raw * fee_factor * slippage_factor (same as old calc: fee + slippage per leg).
 """
 
 import time
-from core.config import MAX_STALE_MS, TAKER_FEE_BPS
+from core.config import MAX_STALE_MS, SLIPPAGE_BPS_BUFFER, TAKER_FEE_BPS
 from core.models import ArbitrageSnapshot, ScannerPath
 
 # tob: symbol -> (bid_px, bid_qty, ask_px, ask_qty, ts_ms)
 TOBCache = dict[str, tuple[float, float, float, float, int]]
 
 _FEE_FACTOR = (1.0 - TAKER_FEE_BPS / 10_000) ** 3
+_SLIPPAGE_FACTOR = (1.0 - SLIPPAGE_BPS_BUFFER / 10_000) ** 3
 
 
 def _raw_mult_buy_buy_sell(a1: float, a2: float, b3: float) -> float:
@@ -81,7 +83,8 @@ def calc_edge_direct(path: ScannerPath, tob: TOBCache) -> ArbitrageSnapshot | No
     else:
         return None
 
-    net_mult = raw_mult * _FEE_FACTOR
+    # Fee + slippage per leg (match old calc.py behavior so displayed net is comparable)
+    net_mult = raw_mult * _FEE_FACTOR * _SLIPPAGE_FACTOR
     raw_bps = (raw_mult - 1.0) * 10_000
     net_bps = (net_mult - 1.0) * 10_000
     ts = max(ts1, ts2, ts3)
