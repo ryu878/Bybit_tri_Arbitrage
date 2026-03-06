@@ -3,6 +3,7 @@
 import asyncio
 import time
 from core.config import (
+    DEBUG_MODE,
     MAX_STALE_MS,
     PRINT_EVERY_SEC,
     SLIPPAGE_BPS_BUFFER,
@@ -10,6 +11,7 @@ from core.config import (
     TAKER_FEE_BPS,
     TOP_N,
 )
+from core.debug_log import debug_log
 from core.models import ArbitrageSnapshot, OrderBookTop
 from core import redis_store
 from services.dashboard.ws_client import OrderbookCache, run_ws_client
@@ -48,6 +50,9 @@ async def run_dashboard() -> None:
     triangles = build_triangles(SYMBOLS)
 
     redis_client = await redis_store.get_redis()
+    if DEBUG_MODE:
+        debug_log("INIT", "Dashboard started, DEBUG_MODE=true")
+        debug_log("INIT", f"Triangles: {len(triangles)}, symbols: {SYMBOLS}, Redis connected")
 
     async def ws_task() -> None:
         await run_ws_client(cache, stop)
@@ -58,12 +63,19 @@ async def run_dashboard() -> None:
         nonlocal sent_for
         while not stop.is_set():
             orderbooks = cache_to_orderbooks(cache)
+            debug_log("SCAN", f"Orderbooks: {len(orderbooks)} symbols (fresh, within MAX_STALE_MS)")
+
             snapshots: list[tuple[str, float, int, ArbitrageSnapshot]] = []
             min_net = _min_net_edge_bps()
+            calculated = 0
             for t in triangles:
                 snap = calc_triangle(t, orderbooks)
-                if snap and snap.edge_bps > min_net:
-                    snapshots.append((snap.triangle_id, snap.edge_bps, snap.timestamp, snap))
+                if snap:
+                    calculated += 1
+                    if snap.edge_bps > min_net:
+                        snapshots.append((snap.triangle_id, snap.edge_bps, snap.timestamp, snap))
+            debug_log("SCAN", f"Triangles: {len(triangles)} total, {calculated} with data, {len(snapshots)} above threshold (net > {min_net:.1f} bps)")
+
             snapshots.sort(key=lambda x: -x[1])
             sorted_snaps = [x[3] for x in snapshots]
 
@@ -73,11 +85,14 @@ async def run_dashboard() -> None:
                 if snap.triangle_id in new_ids:
                     await telegram_notify.send_arb_notification(snap)
                     sent_for.add(snap.triangle_id)
-            sent_for -= sent_for - current_ids  # clear state for triangles that no longer have arb
+            if new_ids:
+                debug_log("TELEGRAM", f"Sent {len(new_ids)} new opportunity notification(s)")
+            sent_for -= sent_for - current_ids
 
             for s in sorted_snaps:
                 await redis_store.write_arb_snapshot(redis_client, s)
             await redis_store.write_arb_top(redis_client, sorted_snaps[:TOP_N])
+            debug_log("REDIS", f"Wrote {len(sorted_snaps)} snapshots, top {min(TOP_N, len(sorted_snaps))} to arb:top")
 
             clear_and_print(sorted_snaps, TOP_N)
             await asyncio.sleep(PRINT_EVERY_SEC)

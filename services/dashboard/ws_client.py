@@ -1,9 +1,11 @@
 """Bybit WebSocket client: subscribe to orderbook.1.<symbol> and push to orderbook cache."""
 
 import asyncio
+import time
 import orjson
 import websockets
 from core.config import BYBIT_WS_PUBLIC_SPOT, SYMBOLS
+from core.debug_log import debug_log
 
 # In-memory orderbook cache: symbol -> (bid, bid_qty, ask, ask_qty, timestamp)
 OrderbookCache = dict[str, tuple[float, float, float, float, int]]
@@ -24,7 +26,10 @@ async def run_ws_client(
         topics = [f"orderbook.1.{s}" for s in SYMBOLS]
         sub = {"op": "subscribe", "args": topics}
         await ws.send(orjson.dumps(sub).decode())
+        debug_log("WS", f"Connected, subscribed to {len(topics)} symbols: {SYMBOLS}")
 
+        updates = 0
+        last_debug_ts = time.monotonic()
         while not stop_event.is_set():
             try:
                 raw = await asyncio.wait_for(ws.recv(), timeout=30.0)
@@ -53,6 +58,12 @@ async def run_ws_client(
                 except (IndexError, TypeError, ValueError):
                     continue
                 cache[s] = (bid, bid_qty, ask, ask_qty, ts)
+                updates += 1
+
+            now = time.monotonic()
+            if now - last_debug_ts >= 5.0:
+                debug_log("WS", f"Orderbook updates: {len(cache)} symbols in cache, {updates} total updates")
+                last_debug_ts = now
 
     while not stop_event.is_set():
         try:
@@ -65,5 +76,6 @@ async def run_ws_client(
                 await handler(ws)
         except asyncio.CancelledError:
             break
-        except Exception:
+        except Exception as e:
+            debug_log("WS", f"Connection error: {e}, reconnecting in 2s")
             await asyncio.sleep(2.0)

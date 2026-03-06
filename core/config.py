@@ -24,6 +24,15 @@ def _get_int(key: str, default: int = 0) -> int:
         return default
 
 
+def _get_bool(key: str, default: bool = False) -> bool:
+    v = _get(key).lower()
+    if v in ("1", "true", "yes", "on"):
+        return True
+    if v in ("0", "false", "no", "off", ""):
+        return False
+    return default
+
+
 REDIS_URL: str = _get("REDIS_URL", "redis://redis:6379/0")
 BYBIT_WS_PUBLIC_SPOT: str = _get(
     "BYBIT_WS_PUBLIC_SPOT", "wss://stream.bybit.com/v5/public/spot"
@@ -43,3 +52,6 @@ MAX_STALE_MS: int = _get_int("MAX_STALE_MS", 1500)
 # Telegram (optional): leave empty to disable
 TELEGRAM_BOT_TOKEN: str = _get("TELEGRAM_BOT_TOKEN", "")
 TELEGRAM_CHAT_ID: str = _get("TELEGRAM_CHAT_ID", "")
+
+# Debug: print data collection, calculations, etc. to console
+DEBUG_MODE: bool = _get_bool("DEBUG_MODE", False)
