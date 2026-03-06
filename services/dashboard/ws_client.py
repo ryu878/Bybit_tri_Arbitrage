@@ -46,8 +46,9 @@ def _make_callback(cache: OrderbookCache) -> object:
             ask_qty = float(asks[0][1])
         except (IndexError, TypeError, ValueError):
             return
-        ts = message.get("ts") or 0
-        cache[s] = (bid, bid_qty, ask, ask_qty, ts)
+        # Use local receipt time for freshness (avoids Bybit ts unit/clock skew; fresh = "we got an update recently")
+        ts_ms = int(time.time() * 1000)
+        cache[s] = (bid, bid_qty, ask, ask_qty, ts_ms)
         with _stats_lock:
             _updates_total += 1
             first = s not in _first_seen
