@@ -92,23 +92,28 @@ def build_conversion_graph(
 def build_triangle_paths(
     instruments: List[SpotInstrument],
     allowed_starts: Set[str] | None = None,
+    allowed_coins: Set[str] | None = None,
 ) -> List[TrianglePath]:
-    """Find all directed triangles start -> mid1 -> mid2 -> start."""
+    """Find all directed triangles start -> mid1 -> mid2 -> start.
+    If allowed_coins is set, only paths where start, mid1, mid2 are in allowed_coins (fewer triangles).
+    If allowed_coins is None, only allowed_starts restricts the start; mid1/mid2 can be any coin.
+    """
     graph = build_conversion_graph(instruments)
     starts = allowed_starts or set(graph.keys())
+    coins = allowed_coins or set(graph.keys())  # restrict vertices to this set when provided
     triangles: List[TrianglePath] = []
     seen: Set[Tuple[str, str, str]] = set()
 
     for start in sorted(starts):
-        if start not in graph:
+        if start not in graph or start not in coins:
             continue
         for leg1 in graph[start]:
             mid1 = leg1.to_coin
-            if mid1 not in graph or mid1 == start:
+            if mid1 not in graph or mid1 not in coins or mid1 == start:
                 continue
             for leg2 in graph[mid1]:
                 mid2 = leg2.to_coin
-                if mid2 in {start, mid1} or mid2 not in graph:
+                if mid2 in {start, mid1} or mid2 not in graph or mid2 not in coins:
                     continue
                 for leg3 in graph[mid2]:
                     if leg3.to_coin != start:
@@ -155,7 +160,12 @@ def triangles_from_spot(allowed_starts: Set[str]) -> tuple[List[Triangle], List[
         init_log("SPOT", "No spot instruments loaded. Check Bybit API / network.")
         return ([], [])
     init_log("SPOT", f"Loaded {len(instruments)} spot instruments")
-    paths = build_triangle_paths(instruments, allowed_starts=allowed_starts)
+    # Restrict triangles to paths that use only allowed_starts as vertices (start, mid1, mid2)
+    paths = build_triangle_paths(
+        instruments,
+        allowed_starts=allowed_starts,
+        allowed_coins=allowed_starts,
+    )
     triangles = [path_to_triangle(p) for p in paths]
     symbols_to_subscribe = sorted(
         set(s for t in triangles for (s, _) in t.legs)
