@@ -1,19 +1,9 @@
 services:
-  redis:
-    image: redis:7-alpine
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
-
   dashboard:
     build: .
     command: poetry run dashboard
     env_file: .env
-    depends_on:
-      - redis
+    extra_hosts:
+      - "host.docker.internal:host-gateway"   # reach host Redis from container (Linux)
     stdin_open: true
     tty: true
-
-volumes:
-  redis_data:

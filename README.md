@@ -34,16 +34,19 @@ poetry install
 
 ## Run with Docker
 
+Expects Redis already running (e.g. on host at port 6379). The dashboard in the container reaches it via `host.docker.internal`.
+
 ```bash
 cp .env.example .env
+# REDIS_URL=redis://host.docker.internal:6379/0 (default in .env.example)
 docker compose up --build
 ```
 
-Runs Redis and the dashboard; dashboard connects to Bybit WebSocket, computes triangular arbitrage, writes snapshots to Redis, and prints a table to the console every `PRINT_EVERY_SEC` seconds.
+Dashboard connects to Bybit WebSocket, computes triangular arbitrage, writes snapshots to Redis, and prints a table to the console every `PRINT_EVERY_SEC` seconds.
 
 ## Run with tmux (local)
 
-1. Start Redis (e.g. `docker compose up -d redis` or local Redis).
+1. Have Redis running (e.g. on host at 6379 or another container).
 2. Set `REDIS_URL=redis://localhost:6379/0` in `.env` if Redis is local.
 3. In tmux, run the dashboard in one pane:
 
@@ -51,8 +54,6 @@ Runs Redis and the dashboard; dashboard connects to Bybit WebSocket, computes tr
 tmux new -s bybit_arb
 poetry run dashboard
 ```
-
-Or split panes: one for Redis (e.g. `docker compose up redis`), one for `poetry run dashboard`.
 
 ## Telegram (optional)
 
